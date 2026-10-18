@@ -3,7 +3,6 @@ from email.mime.text import MIMEText
 import os
 import smtplib
 from fpl_bot import produce_message
-from fpl_bot import schedule_next_run
 
 def create_email(sender_email, receiver_email, subject, body_text):
     """
