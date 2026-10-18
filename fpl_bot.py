@@ -150,17 +150,14 @@ def get_next_lineup_time():
 
 
 def schedule_next_run():
-  """Schedules hardware wake via pmset and script execution via launchd."""
+  """Schedules next run by updating yml and pushing to GitHub."""
   gw_id, run_time = get_next_lineup_time()
 
   if not run_time:
     print("⚠️ No future Gameweek deadlines found to schedule.")
     return
 
-  # GitHub Actions cron runs strictly in UTC, so convert the time
   utc_time = run_time.astimezone(timezone.utc)
-
-  # Extract components for a precise date-specific cron expression (minute hour day month *)
   minute = utc_time.minute
   hour = utc_time.hour
   day = utc_time.day
@@ -180,7 +177,7 @@ def schedule_next_run():
     with open(yml_path, "r") as f:
       content = f.read()
 
-    # 2. Replace the old cron line with the new one using Regex
+    # 2. Replace the old cron line with the new one
     new_content = re.sub(
         r"cron:\s*['\"].*?['\"]", f"cron: '{cron_expr}'", content
     )
@@ -189,7 +186,15 @@ def schedule_next_run():
     with open(yml_path, "w") as f:
       f.write(new_content)
 
-    # 4. Configure git and push the updated yml back to GitHub
+    # 4. Grab GitHub Actions environment variables
+    github_token = os.environ.get("GITHUB_TOKEN")
+    github_repository = os.environ.get("GITHUB_REPOSITORY")
+
+    if not github_token or not github_repository:
+      print("❌ Error: Missing GITHUB_TOKEN or GITHUB_REPOSITORY environment variables.")
+      return
+
+    # 5. Configure git and authenticate the remote URL using the token
     subprocess.run(
         ["git", "config", "--global", "user.name", "github-actions[bot]"],
         check=True,
@@ -204,6 +209,12 @@ def schedule_next_run():
         ],
         check=True,
     )
+    
+    # Authenticate remote URL for pushing
+    remote_url = f"https://x-access-token:{github_token}@github.com/{github_repository}.git"
+    subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
+
+    # 6. Stage, commit, and push
     subprocess.run(["git", "add", yml_path], check=True)
     subprocess.run(
         [
@@ -220,8 +231,3 @@ def schedule_next_run():
 
   except Exception as e:
     print(f"❌ Failed to schedule next run: {e}")
-
-if __name__ == "__main__":
-    fpl_text = produce_message()
-    # 2. Chain next execution
-    schedule_next_run()
