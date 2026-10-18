@@ -3,7 +3,6 @@ from email.mime.text import MIMEText
 import os
 import smtplib
 from fpl_bot import produce_message
-from fpl_bot import schedule_next_run
 
 def create_email(sender_email, receiver_email, subject, body_text):
     """
@@ -65,8 +64,5 @@ def main():
 # Run the script
 if __name__ == "__main__":
   main()
-  # 2. Automatically schedule the NEXT run before finishing!
-  print("\n--- Scheduling Next Gameweek ---")
-  schedule_next_run()
 
   print("🏁 Script finished. Cloud runner shutting down.")
