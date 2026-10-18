@@ -65,8 +65,5 @@ def main():
 # Run the script
 if __name__ == "__main__":
   main()
-  # 2. Automatically schedule the NEXT run before finishing!
-  print("\n--- Scheduling Next Gameweek ---")
-  schedule_next_run()
 
   print("🏁 Script finished. Cloud runner shutting down.")
