@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repository code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }} # Ensures it checks out the active branch, not a detached head
 
       - name: Set up Python
         uses: actions/setup-python@v5
