@@ -190,12 +190,13 @@ def schedule_next_run():
     # 4. Grab GitHub Actions environment variables
     github_token = os.environ.get("GITHUB_TOKEN")
     github_repository = os.environ.get("GITHUB_REPOSITORY")
+    branch_name = os.environ.get("GITHUB_REF_NAME", "main")
 
     if not github_token or not github_repository:
       print("❌ Error: Missing GITHUB_TOKEN or GITHUB_REPOSITORY environment variables.")
       return
 
-    # 5. Configure git and authenticate the remote URL using the token
+    # 5. Configure git credentials
     subprocess.run(
         ["git", "config", "--global", "user.name", "github-actions[bot]"],
         check=True,
@@ -210,12 +211,20 @@ def schedule_next_run():
         ],
         check=True,
     )
-    
+
     # Authenticate remote URL for pushing
     remote_url = f"https://x-access-token:{github_token}@github.com/{github_repository}.git"
     subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True)
 
-    # 6. Stage, commit, and push
+    # 6. Check if the yml file actually changed
+    status_result = subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+    )
+    if yml_path not in status_result.stdout:
+      print("ℹ️ Cron schedule is already up to date. No changes to push.")
+      return
+
+    # 7. Stage, commit, and push explicitly to the active branch
     subprocess.run(["git", "add", yml_path], check=True)
     subprocess.run(
         [
@@ -226,7 +235,7 @@ def schedule_next_run():
         ],
         check=True,
     )
-    subprocess.run(["git", "push"], check=True)
+    subprocess.run(["git", "push", "origin", f"HEAD:{branch_name}"], check=True)
 
     print("✅ Successfully updated and pushed the next run schedule to GitHub!")
 
