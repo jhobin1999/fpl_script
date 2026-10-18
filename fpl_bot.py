@@ -1,8 +1,7 @@
+import re
 import subprocess
 import requests
-from datetime import datetime, timedelta, timezone
-import os
-import plistlib
+from datetime import datetime, timezone
 
 league_id = 127417
 group_id = "BZdi6I3QqmX8DJAKfIH3g1"
