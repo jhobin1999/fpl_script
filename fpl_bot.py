@@ -1,5 +1,7 @@
 import requests
 
+from data_analysis_service import AnalysisService
+
 league_id = 127417
 group_id = "BZdi6I3QqmX8DJAKfIH3g1"
 # Automatically resolve paths based on script location
@@ -56,49 +58,6 @@ def create_user_dict(response):
             user_dict[entry_id] = first_name
     return user_dict
 
-def transaction_message(transactions, user_dict, player_dict, current_gw):
-    result = {}
-    tick = "\u2705"   # ✅ Accepted Waiver
-    cross = "\u274C"  # ❌ Failed/Declined Waiver
-    free = "\U0001F193" # 🆓 Free Agent Transfer
-
-    # Filter transactions for current gameweek only
-    gw_transactions = [t for t in transactions if t.get("event") == current_gw]
-
-    if not gw_transactions:
-        return f"No transactions recorded for Gameweek {current_gw}."
-
-    for transaction in gw_transactions:
-        user_key = str(transaction["entry"])
-        user = user_dict.get(user_key, "Unknown Manager")
-        
-        # Determine status symbol
-        if transaction['kind'] == "f":
-            transaction_result = free
-        else:
-            transaction_result = tick if transaction["result"] == "a" else cross
-
-        player_in = player_dict.get(transaction["element_in"], {}).get('name', f"ID:{transaction['element_in']}")
-        player_out = player_dict.get(transaction["element_out"], {}).get('name', f"ID:{transaction['element_out']}")
-
-        message = f"  • {player_in} IN - {player_out} OUT {transaction_result}"
-        
-        if user in result:
-            result[user].append(message)
-        else:
-            result[user] = [message]
-
-    for user_key, user_name in user_dict.items():
-        if user_name not in result:
-            result[user_name] = ["N/A"]
-
-    # Combine all managers into a single formatted string
-    formatted_blocks = [f"🏆 GW{current_gw} Transactions\n"]
-    for name, messages in result.items():
-        formatted_blocks.append(f"{name}:\n" + "\n".join(messages))
-
-    return "\n\n".join(formatted_blocks)
-
 def produce_message():
     endpoints = {
         "Standings": f"https://draft.premierleague.com/api/league/{league_id}/details",
@@ -123,7 +82,8 @@ def produce_message():
                 print(f"✅ {name} : {response_keys}")
             elif name == "Transactions":
                 transactions = response_json.get("transactions", [])
-                message = transaction_message(transactions, user_dict, player_dict, current_gw)
+                data_service = AnalysisService(transactions, user_dict, player_dict, current_gw)
+                message = data_service.transaction_message()
         else:
             print(f"❌ {name} failed with status code {response.status_code}")
 
