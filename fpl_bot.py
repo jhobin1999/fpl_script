@@ -52,7 +52,7 @@ def create_user_dict(response):
         for user in response["league_entries"]:
             # Fixed quote nesting syntax
             entry_id = str(user["entry_id"])
-            first_name = user["player_first_name"]
+            first_name = user["player_first_name"].capitalize()
             user_dict[entry_id] = first_name
     return user_dict
 
@@ -87,6 +87,10 @@ def transaction_message(transactions, user_dict, player_dict, current_gw):
             result[user].append(message)
         else:
             result[user] = [message]
+
+    for user_key, user_name in user_dict.items():
+        if user_name not in result:
+            result[user_name] = ["N/A"]
 
     # Combine all managers into a single formatted string
     formatted_blocks = [f"🏆 GW{current_gw} Transactions\n"]
